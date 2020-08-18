@@ -1,13 +1,16 @@
-const int pcUsbInputPin = 2;
-const int laptopUsbInputPin = 3;
-const int pcHdmiInputPin = 4;
-const int laptopHdmiInputPin = 5;
+#include <Servo.h>
+
+const int usbInput1Pin = 2;
+const int usbInput2Pin = 3;
+const int hdmiInput1Pin = 4;
+const int hdmiInput2Pin = 5;
 const int buttonPin = 6;
 const int hdmiSwitch = 7;
 const int usbSwitch = 8;
-const int pcControlLedPin = 9;
-const int laptopControlLedPin = 10;
-const int errorStateLedPin = 11;
+const int device1IndicatorLedPin = 9;
+const int device2IndicatorLedPin = 10;
+const int errorIndicatorLedPin = 11;
+const int servoSignalPin = 12;
 
 const int defaultSwitchState = HIGH;
 int hdmiSwitchState = defaultSwitchState;
@@ -22,23 +25,30 @@ unsigned long lastHdmiSwitchTime = 0;
 unsigned long lastUsbSwitchTime = 0;
 unsigned long switchOnDelay = 150;
 
+Servo audioSwitchServo;
+
+const int servoPos1 = 0;
+const int servoPos2 = 90;
+
 void setup() {
-  pinMode(pcUsbInputPin, INPUT);
-  pinMode(laptopUsbInputPin, INPUT);
-  pinMode(pcHdmiInputPin, INPUT);
-  pinMode(laptopHdmiInputPin, INPUT);
+  pinMode(usbInput1Pin, INPUT);
+  pinMode(usbInput2Pin, INPUT);
+  pinMode(hdmiInput1Pin, INPUT);
+  pinMode(hdmiInput2Pin, INPUT);
   pinMode(buttonPin, INPUT);
   pinMode(hdmiSwitch, OUTPUT);
   pinMode(usbSwitch, OUTPUT);
-  pinMode(pcControlLedPin, OUTPUT);
-  pinMode(laptopControlLedPin, OUTPUT);
-  pinMode(errorStateLedPin, OUTPUT);
+  pinMode(device1IndicatorLedPin, OUTPUT);
+  pinMode(device2IndicatorLedPin, OUTPUT);
+  pinMode(errorIndicatorLedPin, OUTPUT);
 
   digitalWrite(hdmiSwitch, hdmiSwitchState);
   digitalWrite(usbSwitch, usbSwitchState);
-  digitalWrite(pcControlLedPin, LOW);
-  digitalWrite(laptopControlLedPin, LOW);
-  digitalWrite(errorStateLedPin, LOW);
+  digitalWrite(device1IndicatorLedPin, LOW);
+  digitalWrite(device2IndicatorLedPin, LOW);
+  digitalWrite(errorIndicatorLedPin, LOW);
+
+  audioSwitchServo.attach(servoSignalPin);
 }
 
 void loop() {
@@ -47,6 +57,7 @@ void loop() {
   if (buttonHasBeenPressed()) {
     switchHdmi();
     switchUsb();
+    switchAux();
   } else {
     turnOnIndicatorLed();
   }
@@ -58,19 +69,19 @@ void loop() {
 }
 
 bool pcHasUsb() {
-  return digitalRead(pcUsbInputPin) == HIGH;
+  return digitalRead(usbInput1Pin) == HIGH;
 }
 
 bool laptopHasUsb() {
-  return digitalRead(laptopUsbInputPin) == HIGH;
+  return digitalRead(usbInput2Pin) == HIGH;
 }
 
 bool pcHasHdmi() {
-  return digitalRead(pcHdmiInputPin) == HIGH;
+  return digitalRead(hdmiInput1Pin) == HIGH;
 }
 
 bool laptopHasHdmi() {
-  return digitalRead(laptopHdmiInputPin) == HIGH;
+  return digitalRead(hdmiInput2Pin) == HIGH;
 }
 
 void alignSwitches(bool retry) {
@@ -96,6 +107,16 @@ void switchHdmi() {
   lastHdmiSwitchTime = millis();
 
   hdmiSwitchState = !defaultSwitchState;
+}
+
+void switchAux() {
+  int currentPosition = audioSwitchServo.read();
+
+  if (currentPosition == servoPos1) {
+    audioSwitchServo.write(servoPos2);
+  } else {
+    audioSwitchServo.write(servoPos1);
+  }
 }
 
 bool buttonHasBeenPressed() {
@@ -134,17 +155,17 @@ void resetTimersIfNeeded() {
 
 void turnOnIndicatorLed() {
   if (pcHasHdmi() && pcHasUsb()) {
-    digitalWrite(pcControlLedPin, HIGH);
-    digitalWrite(laptopControlLedPin, LOW);
-    digitalWrite(errorStateLedPin, LOW);
+    digitalWrite(device1IndicatorLedPin, HIGH);
+    digitalWrite(device2IndicatorLedPin, LOW);
+    digitalWrite(errorIndicatorLedPin, LOW);
   } else if (laptopHasHdmi() && laptopHasUsb()) {
-    digitalWrite(laptopControlLedPin, HIGH);
-    digitalWrite(pcControlLedPin, LOW);
-    digitalWrite(errorStateLedPin, LOW);
+    digitalWrite(device2IndicatorLedPin, HIGH);
+    digitalWrite(device1IndicatorLedPin, LOW);
+    digitalWrite(errorIndicatorLedPin, LOW);
   } else {
-    digitalWrite(errorStateLedPin, HIGH);
-    digitalWrite(pcControlLedPin, LOW);
-    digitalWrite(laptopControlLedPin, LOW);
+    digitalWrite(errorIndicatorLedPin, HIGH);
+    digitalWrite(device1IndicatorLedPin, LOW);
+    digitalWrite(device2IndicatorLedPin, LOW);
   }
 }
 
