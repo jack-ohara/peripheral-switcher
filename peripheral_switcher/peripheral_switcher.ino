@@ -27,8 +27,8 @@ unsigned long switchOnDelay = 150;
 
 Servo audioSwitchServo;
 
-const int servoPos1 = 0;
-const int servoPos2 = 75;
+const int servoPos1 = 75;
+const int servoPos2 = 0;
 int auxServoPosition;
 
 enum InputDevice { device1, device2 };
@@ -56,10 +56,10 @@ void setup() {
 }
 
 void loop() {
-  alignSwitches(true);
+  alignSwitches();
 
   if (buttonHasBeenPressed()) {
-    switchOutputs();
+    switchHdmi();
   } else {
     turnOnIndicatorLed();
   }
@@ -86,23 +86,7 @@ InputDevice getAuxInput() {
   return audioSwitchServo.read() == servoPos1 ? device1 : device2;
 }
 
-bool pcHasUsb() {
-  return digitalRead(usbInput1Pin) == HIGH;
-}
-
-bool laptopHasUsb() {
-  return digitalRead(usbInput2Pin) == HIGH;
-}
-
-bool pcHasHdmi() {
-  return digitalRead(hdmiInput1Pin) == HIGH;
-}
-
-bool laptopHasHdmi() {
-  return digitalRead(hdmiInput2Pin) == HIGH;
-}
-
-void alignSwitches(bool retry) {
+void alignSwitches() {
   InputDevice hdmiInput = getHdmiInput();
 
   setUsb(hdmiInput);
@@ -123,12 +107,6 @@ void setAux(InputDevice targetDevice) {
   if (currentAuxDevice != targetDevice) {
     switchAux();
   }
-}
-
-void switchOutputs() {
-    switchHdmi();
-    switchUsb();
-    switchAux();  
 }
 
 void switchHdmi() {
@@ -185,7 +163,7 @@ void turnOnIndicatorLed() {
   InputDevice hdmiDevice = getHdmiInput();
   InputDevice usbDevice = getUsbInput();
   InputDevice auxDevice = getAuxInput();
-  
+
   if (hdmiDevice == device1 &&
       usbDevice == device1 &&
       auxDevice == device1) {
@@ -193,8 +171,8 @@ void turnOnIndicatorLed() {
     digitalWrite(device2IndicatorLedPin, LOW);
     digitalWrite(errorIndicatorLedPin, LOW);
   } else if (hdmiDevice == device2 &&
-      usbDevice == device2 &&
-      auxDevice == device2) {
+             usbDevice == device2 &&
+             auxDevice == device2) {
     digitalWrite(device1IndicatorLedPin, LOW);
     digitalWrite(device2IndicatorLedPin, HIGH);
     digitalWrite(errorIndicatorLedPin, LOW);
@@ -208,30 +186,29 @@ void turnOnIndicatorLed() {
 void logOut() {
   Serial.println("==================");
   Serial.println();
-  Serial.println("|  HDMI  |  USB  |");
-  Serial.println("|--------|-------|");
-  if (pcHasHdmi()) {
-    if (laptopHasHdmi()) {
-      Serial.print("| PC LAP |");
-    } else {
-      Serial.print("|   PC   |");
-    }
-  } else if (laptopHasHdmi()) {
-    Serial.print("|  LAP   |");
+  Serial.println("|  HDMI  |  USB  |  AUX  |");
+  Serial.println("|--------|-------|-------|");
+
+  InputDevice hdmiDevice = getHdmiInput();
+  InputDevice usbDevice = getUsbInput();
+  InputDevice auxDevice = getAuxInput();
+
+  if (hdmiDevice == device1) {
+    Serial.print("|   1    |");
   } else {
-    Serial.print("|  NONE  |");
+    Serial.print("|   2    |");    
   }
 
-  if (pcHasUsb()) {
-    if (laptopHasUsb()) {
-      Serial.print(" PC LAP|");
-    } else {
-      Serial.print("   PC  |");
-    }
-  } else if (laptopHasUsb()) {
-    Serial.print("  LAP  |");
+  if (usbDevice == device1) {
+    Serial.print("|   1   |");
   } else {
-    Serial.print("  NONE |");
+    Serial.print("|   2   |");    
+  }
+
+  if (auxDevice == device1) {
+    Serial.print("|   1   |");
+  } else {
+    Serial.print("|   2   |");    
   }
   Serial.println();
 
